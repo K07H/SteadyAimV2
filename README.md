@@ -13,10 +13,10 @@ It is an enhanced version of the old SteadyAim mod from __Werkrat__.
 
 ## Install
 ### If you already have ModAPI installed:
-Copy the .mod file inside directory "__[...]/modapi/mods/GH/__". Then launch __ModAPI.exe__, select "SteadyAim v2" in the left menu and click "Launch the game".
+Copy the .mod file inside directory "__[...]/modapi/mods/GH/__". Then launch __ModAPI.exe__, select "Steady Aim V2" in the left menu and click "Launch the game".
 
 ### If you don't have ModAPI yet:
-Go to [https://modapi.survivetheforest.net/game/GH/](https://modapi.survivetheforest.net/game/GH/), check "SteadyAim v2" from the mods list and hit "Download". Then extract the archive, launch __ModAPI.exe__, select "SteadyAim v2" in the left menu and click "Launch the game".
+Go to [https://modapi.survivetheforest.net/game/GH/](https://modapi.survivetheforest.net/game/GH/), check "SteadyAim v2" from the mods list and hit "Download". Then extract the archive, launch __ModAPI.exe__, select "Steady Aim V2" in the left menu and click "Launch the game".
 
 ----
 
@@ -30,3 +30,8 @@ Then configure aim settings like you want (for example you can set power to 0 to
 ## Preview
 [https://i.imgur.com/Y0kVr8X.jpeg](https://i.imgur.com/Y0kVr8X.jpeg)
 ![Steady Aim V2 preview](https://i.imgur.com/Y0kVr8X.jpeg)
+
+----
+
+## Support
+You can get help from the ModAPI community at [https://discord.gg/VAMuXyd](https://discord.gg/VAMuXyd) or you can contact me on Discord if needed (OSubMarin#0460).
