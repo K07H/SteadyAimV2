@@ -1,0 +1,18 @@
+<Mod ID="SteadyAimV2">
+  <Compatible>2.3.5</Compatible>
+  <Button Standard="NumPad5" ID="SteadyAimV2Settings">
+    <Name>
+      <EN>Show settings</EN>
+    </Name>
+    <Description>
+      <EN>This shortcut will open the mod settings window.</EN>
+    </Description>
+  </Button>
+  <Name>
+    <EN>Steady Aim V2</EN>
+  </Name>
+  <Description>
+    <EN>A mod for Green Hell that allows the player to tweak aim settings precisely. It is an enhanced version of the old SteadyAim mod from Werkrat.</EN>
+  </Description>
+  <Version>2.0.0.1</Version>
+</Mod>
