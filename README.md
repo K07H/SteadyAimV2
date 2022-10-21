@@ -29,4 +29,4 @@ Then configure aim settings like you want (for example you can set power to 0 to
 
 ## Preview
 [https://i.imgur.com/Y0kVr8X.jpeg](https://i.imgur.com/Y0kVr8X.jpeg)
-
+![Steady Aim V2 preview](https://i.imgur.com/Y0kVr8X.jpeg)
