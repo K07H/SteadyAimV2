@@ -5,13 +5,12 @@
 ## Description
 __Steady Aim V2__ is a mod for __Green Hell__ that allows the player to tweak aim settings precisely.
 
-This mod only works if you are the host or in singleplayer mode.
-
 It is an enhanced version of the old SteadyAim mod from __Werkrat__.
 
 ----
 
 ## Install
+
 ### If you already have ModAPI installed:
 Copy the .mod file inside directory "__[...]/modapi/mods/GH/__". Then launch __ModAPI.exe__, select "Steady Aim V2" in the left menu and click "Launch the game".
 
@@ -20,10 +19,23 @@ Go to [https://modapi.survivetheforest.net/game/GH/](https://modapi.survivethefo
 
 ----
 
-## Usage
+This mod does not require any additional mods to work properly.
+
+----
+
+## Usage for singleplayer or host
 When in game simply press the shortcut to open settings window (by default it is __NumPad5__).
 
 Then configure aim settings like you want (for example you can set power to 0 to disable shaking completely).
+
+----
+
+## Usage for multiplayer when you are not the host
+Open settings window (by default it is __NumPad5__) then click "__Ask permission__" button.
+
+If the host answers "__Allowed__" (without quotes) in the chat you will be granted permission to use the mod.
+
+The host doesn't need to install any mods (it works even if the host doesn't have ModAPI).
 
 ----
 
