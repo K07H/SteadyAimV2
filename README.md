@@ -37,11 +37,24 @@ The host doesn't need to install any mods (it works even if the host doesn't hav
 
 ----
 
+## Changelogs
+__v2.0.0.2__: Now works in multiplayer when you are not the host.
+
+__v2.0.0.1__: Instead of disabling shaking it now displays a settings window where you can tweak aim settings precisely.
+
+
+----
+
 ## Preview
-[https://i.imgur.com/Y0kVr8X.jpeg](https://i.imgur.com/Y0kVr8X.jpeg)
+<sub>[https://i.imgur.com/Y0kVr8X.jpeg](https://i.imgur.com/Y0kVr8X.jpeg)</sub>
 ![Steady Aim V2 preview](https://i.imgur.com/Y0kVr8X.jpeg)
 
 ----
 
+## Contributors
+Big thanks to slik/P for mod testing.
+
+----
+
 ## Support
-You can get help from the ModAPI community at [https://discord.gg/VAMuXyd](https://discord.gg/VAMuXyd) or you can contact me on Discord if needed (OSubMarin#0460).
+You can get help from the ModAPI community at [https://discord.gg/VAMuXyd](https://discord.gg/VAMuXyd), or you can contact me on Discord if needed (OSubMarin#0460).
