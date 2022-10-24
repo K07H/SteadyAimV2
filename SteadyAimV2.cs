@@ -38,10 +38,10 @@ namespace SteadyAimV2
 
         #endregion
 
-        #region Statics
+        #region Attributes
 
         /// <summary>The name of this mod.</summary>
-        private static readonly string ModName = nameof(SteadyAimV2);
+        public static readonly string ModName = nameof(SteadyAimV2);
 
         /// <summary>Path to ModAPI runtime configuration file (contains game shortcuts).</summary>
         private static readonly string RuntimeConfigurationFile = Path.Combine(Application.dataPath.Replace("GH_Data", "Mods"), "RuntimeConfiguration.xml");
@@ -57,8 +57,12 @@ namespace SteadyAimV2
 
         private static KeyCode ModKeybindingId { get; set; } = DefaultModKeybindingId;
 
+        // Game handles attributes.
+
         private static HUDManager LocalHUDManager = null;
         private static Player LocalPlayer = null;
+
+        // UI attributes.
 
         private static readonly float ModScreenTotalWidth = 800f;
         private static readonly float ModScreenTotalHeight = 80f;
@@ -66,33 +70,54 @@ namespace SteadyAimV2
         private static readonly float ModScreenMaxWidth = 850f;
         private static readonly float ModScreenMinHeight = 50f;
         private static readonly float ModScreenMaxHeight = 300f;
-
-        public static Rect SteadyAimV2Screen = new Rect(ModScreenStartPositionX, ModScreenStartPositionY, ModScreenTotalWidth, ModScreenTotalHeight);
-
         private static float ModScreenStartPositionX { get; set; } = Screen.width / 7f;
         private static float ModScreenStartPositionY { get; set; } = Screen.height / 7f;
-        private static bool IsMinimized { get; set; } = false;
+        public static Rect SteadyAimV2Screen = new Rect(ModScreenStartPositionX, ModScreenStartPositionY, ModScreenTotalWidth, ModScreenTotalHeight);
 
         private Color DefaultGuiColor = GUI.color;
+        private bool IsMinimized = false;
         private bool ShowUI = false;
 
+        // Options attributes.
+
         public static bool SteadyAimV2Enabled { get; set; } = false;
-        private static bool SteadyAimV2EnabledOrig { get; set; } = false;
+        private bool SteadyAimV2EnabledOrig = false;
 
         public static float Power { get; set; } = 10.0f;
-        private static float PowerOrig { get; set; } = 10.0f;
+        private float PowerOrig = 10.0f;
 
         public static float Speed { get; set; } = 1.0f;
-        private static float SpeedOrig { get; set; } = 1.0f;
+        private float SpeedOrig = 1.0f;
 
         public static float Duration { get; set; } = 1.0f;
-        private static float DurationOrig { get; set; } = 1.0f;
+        private float DurationOrig = 1.0f;
 
-        public static string HUDBigInfoMessage(string message, MessageType messageType, Color? headcolor = null) => $"<color=#{ (headcolor != null ? ColorUtility.ToHtmlStringRGBA(headcolor.Value) : ColorUtility.ToHtmlStringRGBA(Color.red))  }>{messageType}</color>\n{message}";
 
-        private static void ShowHUDBigInfo(string text, float duration = 2f)
+        // Permission attributes.
+
+        public static readonly string PermissionRequestBegin = "Can I use \"";
+        public static readonly string PermissionRequestEnd = "\" mod? (Host can reply \"Allowed\" to give permission)";
+        public static readonly string PermissionRequestFinal = PermissionRequestBegin + "Steady Aim v2" + PermissionRequestEnd;
+
+        public static bool DoRequestPermission = false;
+        public static bool PermissionGranted = false;
+        public static bool PermissionDenied = false;
+        public static int NbPermissionRequests = 0;
+
+        public static bool WaitingPermission = false;
+        public static long PermissionAskTime = -1L;
+        public static long WaitAMinBeforeFirstRequest = -1L;
+
+        public static bool OtherWaitingPermission = false;
+        public static long OtherPermissionAskTime = -1L;
+
+        #endregion
+
+        #region Static functions
+
+        private static void ShowHUDBigInfo(string text, float duration)
         {
-            string header = ModName + " Info";
+            string header = "Steady Aim v2 Info";
             string textureName = HUDInfoLogTextureType.Reputation.ToString();
             HUDBigInfo obj = (HUDBigInfo)LocalHUDManager.GetHUD(typeof(HUDBigInfo));
             HUDBigInfoData.s_Duration = duration;
@@ -107,7 +132,123 @@ namespace SteadyAimV2
             obj.Show(show: true);
         }
 
-        private static void SaveSettings()
+        public static void ShowHUDInfo(string msg, float duration = 6f, Color? color = null) => ShowHUDBigInfo($"<color=#{ColorUtility.ToHtmlStringRGBA(color != null && color.HasValue ? color.Value : Color.green)}>Info</color>\n{msg}", duration);
+        public static void ShowHUDError(string msg, float duration = 6f, Color? color = null) => ShowHUDBigInfo($"<color=#{ColorUtility.ToHtmlStringRGBA(color != null && color.HasValue ? color.Value : Color.red)}>Error</color>\n{msg}", duration);
+
+        public static string ReadNetMessage(P2PNetworkReader reader)
+        {
+            uint readerPrePos = reader.Position;
+            if (readerPrePos >= int.MaxValue) // Failsafe for uint cast to int.
+                return null;
+            string message = reader.ReadString();
+            reader.Seek(-1 * ((int)reader.Position - (int)readerPrePos));
+            return message;
+        }
+
+        public static void TextChatEvnt(P2PNetworkMessage net_msg)
+        {
+            try
+            {
+                if (!SteadyAimV2.PermissionDenied && !SteadyAimV2.PermissionGranted && net_msg.m_MsgType == 10 && net_msg.m_ChannelId == 1)
+                {
+                    bool peerIsMaster = net_msg.m_Connection.m_Peer.IsMaster();
+                    if (!peerIsMaster)
+                    {
+                        string message = ReadNetMessage(net_msg.m_Reader);
+                        if (!string.IsNullOrWhiteSpace(message) && message.StartsWith(SteadyAimV2.PermissionRequestBegin, StringComparison.InvariantCulture) && message.IndexOf(SteadyAimV2.PermissionRequestEnd, StringComparison.InvariantCulture) > 0)
+                        {
+                            SteadyAimV2.OtherPermissionAskTime = DateTime.Now.Ticks / 10000000L;
+                            SteadyAimV2.OtherWaitingPermission = true;
+                        }
+                    }
+                    if (!SteadyAimV2.OtherWaitingPermission && SteadyAimV2.WaitingPermission && peerIsMaster)
+                    {
+                        string message = ReadNetMessage(net_msg.m_Reader);
+                        if (!string.IsNullOrWhiteSpace(message) && string.Compare(message, "Allowed", StringComparison.InvariantCulture) == 0)
+                        {
+                            SteadyAimV2.WaitingPermission = false;
+                            SteadyAimV2.PermissionAskTime = -1L;
+                            SteadyAimV2.PermissionGranted = true;
+                            ShowHUDInfo("Host gave you permission to use \"Steady Aim v2\" mod.");
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                ModAPI.Log.Write($"[{ModName}:TextChatRecv] Exception caught while receiving text chat: [{ex.ToString()}]");
+            }
+        }
+
+        public static void RestorePermissionStateToOrig()
+        {
+            SteadyAimV2.OtherWaitingPermission = false;
+            SteadyAimV2.OtherPermissionAskTime = -1L;
+            SteadyAimV2.WaitingPermission = false;
+            SteadyAimV2.PermissionAskTime = -1L;
+            SteadyAimV2.WaitAMinBeforeFirstRequest = -1L;
+            SteadyAimV2.PermissionDenied = false;
+            SteadyAimV2.PermissionGranted = false;
+            SteadyAimV2.DoRequestPermission = false;
+            SteadyAimV2.NbPermissionRequests = 0;
+        }
+
+        #endregion
+
+        #region Methods
+
+        private KeyCode GetConfigurableKey(string buttonId, KeyCode defaultValue)
+        {
+            if (File.Exists(RuntimeConfigurationFile))
+            {
+                string[] lines = null;
+                try
+                {
+                    lines = File.ReadAllLines(RuntimeConfigurationFile);
+                }
+                catch (Exception ex)
+                {
+                    ModAPI.Log.Write($"[{ModName}:GetConfigurableKey] Exception caught while reading shortcuts configuration: [{ex.ToString()}].");
+                }
+                if (lines != null && lines.Length > 0)
+                {
+                    string sttDelim = $"<Button ID=\"{buttonId}\">";
+                    string endDelim = "</Button>";
+                    foreach (string line in lines)
+                    {
+                        if (line.Contains(sttDelim) && line.Contains(endDelim))
+                        {
+                            int stt = line.IndexOf(sttDelim);
+                            if ((stt >= 0) && (line.Length > (stt + sttDelim.Length)))
+                            {
+                                string split = line.Substring(stt + sttDelim.Length);
+                                if (split != null && split.Contains(endDelim))
+                                {
+                                    int end = split.IndexOf(endDelim);
+                                    if ((end > 0) && (split.Length > end))
+                                    {
+                                        string parsed = split.Substring(0, end);
+                                        if (!string.IsNullOrEmpty(parsed))
+                                        {
+                                            parsed = parsed.Replace("NumPad", "Keypad").Replace("Oem", "");
+                                            if (!string.IsNullOrEmpty(parsed) && Enum.TryParse<KeyCode>(parsed, true, out KeyCode parsedKey))
+                                            {
+                                                ModAPI.Log.Write($"[{ModName}:GetConfigurableKey] Shortcut for \"{buttonId}\" has been parsed ({parsed}).");
+                                                return parsedKey;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            ModAPI.Log.Write($"[{ModName}:GetConfigurableKey] Could not parse shortcut for \"{buttonId}\". Using default value ({defaultValue.ToString()}).");
+            return defaultValue;
+        }
+
+        private void SaveSettings()
         {
             try
             {
@@ -123,7 +264,7 @@ namespace SteadyAimV2
             }
         }
 
-        private static void LoadSettings()
+        private void LoadSettings()
         {
             if (!File.Exists(SteadyAimV2ConfigurationFile))
             {
@@ -216,57 +357,6 @@ namespace SteadyAimV2
             }
         }
 
-        private static KeyCode GetConfigurableKey(string buttonId, KeyCode defaultValue)
-        {
-            if (File.Exists(RuntimeConfigurationFile))
-            {
-                string[] lines = null;
-                try
-                {
-                    lines = File.ReadAllLines(RuntimeConfigurationFile);
-                }
-                catch (Exception ex)
-                {
-                    ModAPI.Log.Write($"[{ModName}:GetConfigurableKey] Exception caught while reading shortcuts configuration: [{ex.ToString()}].");
-                }
-                if (lines != null && lines.Length > 0)
-                {
-                    string sttDelim = "<Button ID=\"" + buttonId + "\">";
-                    string endDelim = "</Button>";
-                    foreach (string line in lines)
-                    {
-                        if (line.Contains(sttDelim) && line.Contains(endDelim))
-                        {
-                            int stt = line.IndexOf(sttDelim);
-                            if ((stt >= 0) && (line.Length > (stt + sttDelim.Length)))
-                            {
-                                string split = line.Substring(stt + sttDelim.Length);
-                                if (split != null && split.Contains(endDelim))
-                                {
-                                    int end = split.IndexOf(endDelim);
-                                    if ((end > 0) && (split.Length > end))
-                                    {
-                                        string parsed = split.Substring(0, end);
-                                        if (!string.IsNullOrEmpty(parsed))
-                                        {
-                                            parsed = parsed.Replace("NumPad", "Keypad").Replace("Oem", "");
-                                            if (!string.IsNullOrEmpty(parsed) && Enum.TryParse<KeyCode>(parsed, true, out KeyCode parsedKey))
-                                            {
-                                                ModAPI.Log.Write($"[{ModName}:GetConfigurableKey] Shortcut for \"{buttonId}\" has been parsed ({parsed}).");
-                                                return parsedKey;
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            ModAPI.Log.Write($"[{ModName}:GetConfigurableKey] Could not parse shortcut for \"{buttonId}\". Using default value ({defaultValue.ToString()}).");
-            return defaultValue;
-        }
-
         #endregion
 
         #region UI methods
@@ -277,7 +367,7 @@ namespace SteadyAimV2
             SteadyAimV2Screen = GUILayout.Window(wid,
                 SteadyAimV2Screen,
                 InitSteadyAimV2Screen,
-                "Steady Aim v2.0.0.1, by OSubMarin",
+                "Steady Aim v2.0.0.2, by OSubMarin",
                 GUI.skin.window,
                 GUILayout.ExpandWidth(true),
                 GUILayout.MinWidth(ModScreenMinWidth),
@@ -287,7 +377,7 @@ namespace SteadyAimV2
                 GUILayout.MaxHeight(ModScreenMaxHeight));
         }
 
-        private void InitData()
+        private void GetGameHandles()
         {
             LocalHUDManager = HUDManager.Get();
             LocalPlayer = Player.Get();
@@ -329,7 +419,9 @@ namespace SteadyAimV2
 
         private void ModOptionsBox()
         {
-            if (P2PSession.Instance.GetGameVisibility() == P2PGameVisibility.Singleplayer || ReplTools.AmIMaster())
+            bool isSingleplayerOrMaster = (P2PSession.Instance.GetGameVisibility() == P2PGameVisibility.Singleplayer || ReplTools.AmIMaster());
+            bool hasPermission = (SteadyAimV2.PermissionGranted && !SteadyAimV2.PermissionDenied);
+            if (isSingleplayerOrMaster || hasPermission)
             {
                 using (var optionsScope = new GUILayout.VerticalScope(GUI.skin.box))
                 {
@@ -412,13 +504,17 @@ namespace SteadyAimV2
                         SteadyAimV2EnabledOrig = SteadyAimV2Enabled;
                         if (SteadyAimV2Enabled)
                         {
-                            ShowHUDBigInfo(HUDBigInfoMessage("Steady Aim feature enabled.", MessageType.Info, Color.green));
+                            ShowHUDInfo("Steady Aim feature enabled.", 4f);
+#if VERBOSE
                             ModAPI.Log.Write($"[{ModName}:ModOptionsBox] Steady Aim feature has been enabled.");
+#endif
                         }
                         else
                         {
-                            ShowHUDBigInfo(HUDBigInfoMessage("Steady Aim feature disabled.", MessageType.Info, Color.red));
+                            ShowHUDInfo("Steady Aim feature disabled.", 4f, Color.yellow);
+#if VERBOSE
                             ModAPI.Log.Write($"[{ModName}:ModOptionsBox] Steady Aim feature has been disabled.");
+#endif
                         }
                         SaveSettings();
                         InitWindow();
@@ -429,9 +525,18 @@ namespace SteadyAimV2
             {
                 using (var optionsScope = new GUILayout.VerticalScope(GUI.skin.box))
                 {
-                    GUI.color = Color.yellow;
-                    GUILayout.Label($"{ModName} mod only works if you are the host or in singleplayer mode.", GUI.skin.label);
-                    GUI.color = DefaultGuiColor;
+                    if (!hasPermission && SteadyAimV2.NbPermissionRequests >= 3)
+                    {
+                        GUI.color = Color.yellow;
+                        GUILayout.Label("Host did not reply to your permission requests or has denied permission to use Steady Aim v2 mod.", GUI.skin.label);
+                        GUI.color = DefaultGuiColor;
+                    }
+                    else
+                    {
+                        GUILayout.Label("It seems that you are not the host. You can ask permission to use Steady Aim v2 mod with the button below:", GUI.skin.label);
+                        if (GUILayout.Button("Ask permission", GUI.skin.button, GUILayout.MinWidth(120f)))
+                            SteadyAimV2.DoRequestPermission = true;
+                    }
                 }
             }
         }
@@ -482,17 +587,22 @@ namespace SteadyAimV2
         private void Start()
         {
             ModAPI.Log.Write($"[{ModName}:Start] Initializing {ModName}...");
-            InitData();
+            GetGameHandles();
             ModKeybindingId = GetConfigurableKey(ModKeybindingName, DefaultModKeybindingId);
             LoadSettings();
             ModAPI.Log.Write($"[{ModName}:Start] {ModName} initialized.");
+        }
+
+        private void OnDestroy()
+        {
+            SteadyAimV2.RestorePermissionStateToOrig();
         }
 
         private void OnGUI()
         {
             if (ShowUI)
             {
-                InitData();
+                GetGameHandles();
                 GUI.skin = ModAPI.Interface.Skin;
                 InitWindow();
             }
@@ -504,12 +614,35 @@ namespace SteadyAimV2
             {
                 if (!ShowUI)
                 {
-                    InitData();
+                    GetGameHandles();
                     EnableCursor(true);
                 }
                 ShowUI = !ShowUI;
                 if (!ShowUI)
                     EnableCursor(false);
+            }
+            if (!(P2PSession.Instance.GetGameVisibility() == P2PGameVisibility.Singleplayer || ReplTools.AmIMaster() || SteadyAimV2.PermissionDenied || SteadyAimV2.PermissionGranted))
+            {
+                long currTime = DateTime.Now.Ticks / 10000000L;
+                if (SteadyAimV2.WaitingPermission)
+                {
+                    if ((currTime - SteadyAimV2.PermissionAskTime) > 56L)
+                    {
+                        if (SteadyAimV2.NbPermissionRequests >= 3)
+                            SteadyAimV2.PermissionDenied = true;
+                        SteadyAimV2.WaitingPermission = false;
+                        SteadyAimV2.PermissionAskTime = -1L;
+                        ShowHUDInfo($"Host did not reply to your permission request{(SteadyAimV2.PermissionDenied ? "" : ", please try again")}.", 6f, Color.yellow);
+                    }
+                }
+                if (SteadyAimV2.OtherWaitingPermission)
+                {
+                    if ((currTime - SteadyAimV2.OtherPermissionAskTime) > 59L)
+                    {
+                        SteadyAimV2.OtherWaitingPermission = false;
+                        SteadyAimV2.OtherPermissionAskTime = -1L;
+                    }
+                }
             }
         }
 

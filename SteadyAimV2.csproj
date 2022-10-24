@@ -20,7 +20,6 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
     
@@ -325,10 +324,12 @@
 
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="PlayerExtended.cs"  />
+    <Compile Include="HUDTextChatExt.cs"  />
+<Compile Include="HUDTextChatHistoryExt.cs"  />
+<Compile Include="P2PSessionExt.cs"  />
+<Compile Include="PlayerExt.cs"  />
 <Compile Include="Properties\AssemblyInfo.cs"  />
 <Compile Include="SteadyAimV2.cs"  />
-<Compile Include="SteadyPlayer.cs"  />
 
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
