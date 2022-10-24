@@ -28,8 +28,6 @@ When in game simply press the shortcut to open settings window (by default it is
 
 Then configure aim settings like you want (for example you can set power to 0 to disable shaking completely).
 
-----
-
 ## Usage for multiplayer when you are not the host
 Open settings window (by default it is __NumPad5__) then click "__Ask permission__" button.
 
